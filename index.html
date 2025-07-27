@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWASP ZAP | Scanner Web</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-dark: #5649c0;
+            --secondary: #00cec9;
+            --danger: #ff7675;
+            --warning: #fdcb6e;
+            --success: #00b894;
+            --dark: #2d3436;
+            --light: #f5f6fa;
+            --gray: #636e72;
+            --card-bg: #ffffff;
+            --bg-color: #f9f9f9;
+            --border-radius: 12px;
+            --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #a29bfe;
+            --primary-dark: #847bd6;
+            --secondary: #55efc4;
+            --danger: #ff7675;
+            --warning: #ffeaa7;
+            --success: #00b894;
+            --dark: #dfe6e9;
+            --light: #2d3436;
+            --gray: #b2bec3;
+            --card-bg: #1e272e;
+            --bg-color: #12181b;
+            --box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--dark);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header Styles */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="dark"] header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-text h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.2rem;
+        }
+
+        .logo-text p {
+            font-size: 0.9rem;
+            color: var(--gray);
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .theme-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--gray);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.toggle-slider {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Scanner Section */
+        .scanner-card {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2.5rem;
+        }
+
+        .scanner-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .scanner-title i {
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            background-color: var(--card-bg);
+            color: var(--dark);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .form-control {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(108, 92, 231, 0.2);
+        }
+
+        .scanner-form {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .url-input {
+            flex: 1;
+        }
+
+        .scan-btn {
+            padding: 0.8rem 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            align-self: flex-end;
+            height: fit-content;
+        }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        .scan-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        /* Output Section */
+        .output-container {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        .output-header {
+            padding: 1rem 1.5rem;
+            background-color: rgba(0, 0, 0, 0.03);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        [data-theme="dark"] .output-header {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .output-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .output-clear {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .output-content {
+            padding: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            color: #404040;
+            height: 300px;
+            overflow-y: auto;
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .output-content {
+            background-color: rgba(255, 255, 255, 0.02);
+            color: #bebebe;
+        }
+
+        /* Status Indicator */
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--gray);
+        }
+
+        .status-dot.active {
+            background-color: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Notification Section */
+        .notification-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        [data-theme="dark"] .notification-section {
+            border-top-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .notification-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .notification-title i {
+            color: var(--primary);
+        }
+
+        .notification-text {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .scanner-form {
+                flex-direction: column;
+            }
+
+            .scan-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>OWASP ZAP Scanner</h1>
+                    <p>Web Interface for Security Testing</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="theme-toggle">
+                    <input type="checkbox" id="theme-switch">
+                    <label class="toggle-slider" for="theme-switch"></label>
+                </div>
+            </div>
+        </header>
+
+        <div class="scanner-card">
+            <h2 class="scanner-title">
+                <i class="fas fa-bolt"></i>
+                Executar Novo Scan
+            </h2>
+
+            <div class="form-group">
+                <label for="targetUrl" class="form-label">URL para Scan:</label>
+                <input type="url" class="form-control url-input" id="targetUrl" placeholder="https://example.com"
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label for="email" class="form-label">E-mail para notificação:</label>
+                <input type="email" class="form-control" id="email" placeholder="seu@email.com">
+                <small class="notification-text">Receba um e-mail quando o scan for concluído</small>
+            </div>
+
+            <div class="scanner-form">
+                <button class="scan-btn" id="scanBtn">
+                    <i class="fas fa-play"></i>
+                    Iniciar Scan
+                </button>
+            </div>
+
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">Pronto para executar</span>
+            </div>
+
+            <div class="notification-section">
+                <h3 class="notification-title">
+                    <i class="fas fa-envelope"></i>
+                    Notificação por E-mail
+                </h3>
+                <p class="notification-text">
+                    Um relatório completo será enviado para o e-mail fornecido assim que o scan for concluído.
+                    Certifique-se de inserir um endereço de e-mail válido.
+                </p>
+            </div>
+        </div>
+
+        <div class="output-container">
+            <div class="output-header">
+                <div class="output-title">Saída do Comando</div>
+                <button class="output-clear" id="clearOutput">
+                    <i class="fas fa-trash-alt"></i>
+                    Limpar
+                </button>
+            </div>
+            <div class="output-content" id="commandOutput">
+                // A saída do comando ZAP será exibida aqui...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Functionality
+        const themeToggle = document.getElementById('theme-switch');
+        const currentTheme = localStorage.getItem('theme');
+
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            themeToggle.checked = true;
+        }
+
+        themeToggle.addEventListener('change', function () {
+            if (this.checked) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Scanner Functionality
+        const scanBtn = document.getElementById('scanBtn');
+        const targetUrlInput = document.getElementById('targetUrl');
+        const emailInput = document.getElementById('email');
+        const commandOutput = document.getElementById('commandOutput');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const clearOutput = document.getElementById('clearOutput');
+
+        scanBtn.addEventListener('click', async () => {
+            const url = targetUrlInput.value.trim();
+            const email = emailInput.value.trim();
+
+            if (!url) {
+                alert('Por favor, insira uma URL válida para o scan.');
+                return;
+            }
+
+            try {
+                // Validação de URL básica
+                new URL(url);
+            } catch (e) {
+                alert('URL inválida. Use o formato: https://example.com');
+                return;
+            }
+
+            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('Por favor, insira um e-mail válido (ou deixe em branco se não quiser notificação).');
+                return;
+            }
+
+            // Atualizar UI para estado de loading
+            scanBtn.disabled = true;
+            scanBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
+            statusDot.classList.add('active');
+            statusText.textContent = 'Iniciando scan... Isso pode demorar alguns minutos.';
+
+            commandOutput.textContent = `Preparando para iniciar o scan para URL: ${url} e E-mail: ${email || 'Não informado'}...\n\n`;
+            commandOutput.scrollTop = commandOutput.scrollHeight;
+
+            try {
+                // Chamada para o endpoint `/start-configured-tests` da sua API Flask
+                const response = await fetch('http://localhost:5000/start-configured-tests', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url, email })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    // Se a resposta HTTP não for OK (ex: 400, 500)
+                    commandOutput.textContent += `\nERRO DO SERVIDOR: ${data.error || 'Erro desconhecido.'}\n`;
+                    if (data.bash_stderr) {
+                        commandOutput.textContent += `\nSaída de Erro do Script Bash:\n${data.bash_stderr}\n`;
+                    }
+                    if (data.message) {
+                        commandOutput.textContent += `Mensagem do Servidor: ${data.message}\n`;
+                    }
+                    resetUI('Scan Falhou');
+                    return;
+                }
+
+                // Se a resposta for OK
+                commandOutput.textContent += `\n${data.message || 'Comando enviado com sucesso.'}\n`;
+                if (data.bash_stdout) {
+                    commandOutput.textContent += `\nSaída do Script Bash:\n${data.bash_stdout}\n`;
+                }
+                if (data.bash_stderr) { // Embora seja sucesso, pode haver stderr se o script tiver avisos
+                    commandOutput.textContent += `\nSaída de Erro do Script Bash (se houver): \n${data.bash_stderr}\n`;
+                }
+                commandOutput.scrollTop = commandOutput.scrollHeight;
+
+                // Aqui você pode adicionar lógica para mostrar o link para o relatório
+                // Como o JSON é atualizado, o dashboard já refletirá os novos dados.
+                // Mas se o seu script bash gerar um HTML específico, você pode extrair o caminho daqui.
+                commandOutput.textContent += '\n✅ Scan concluído com sucesso! Os relatórios foram atualizados.';
+
+                // Opcional: Adicionar um link direto para o dashboard atualizado
+                const dashboardLink = document.createElement('p');
+                dashboardLink.innerHTML = '<a href="/dashboard" target="_blank" style="color: var(--primary); text-decoration: underline;">Clique aqui para ver o Dashboard com os novos relatórios</a>';
+                commandOutput.appendChild(dashboardLink);
+
+                resetUI('Scan Completo!');
+
+            } catch (error) {
+                commandOutput.textContent += `\nERRO AO CONECTAR COM O SERVIDOR: ${error.message}\n`;
+                resetUI('Conexão Falhou');
+            }
+        });
+
+        function resetUI(statusMessage) {
+            scanBtn.disabled = false;
+            scanBtn.innerHTML = '<i class="fas fa-play"></i> Iniciar Scan';
+            statusDot.classList.remove('active');
+            statusText.textContent = statusMessage;
+        }
+
+        clearOutput.addEventListener('click', () => {
+            commandOutput.textContent = '// A saída do comando ZAP será exibida aqui...';
+            resetUI('Pronto para executar'); // Reseta o status ao limpar
+        });
+
+    </script>
+</body>
+
+</html>

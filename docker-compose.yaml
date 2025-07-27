@@ -1,0 +1,33 @@
+services:
+  api:
+    build: 
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: zap-api-flask
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./reports:/app/reports
+    environment:
+      - FLASK_APP=api_flask.py
+      - FLASK_ENV=development
+    networks:
+      - zap_network
+    
+  web:
+    image: nginx:latest
+    container_name: zap-web-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/usr/share/nginx/html
+    depends_on:
+      - api
+    networks:
+      - zap_network
+    
+networks:
+  zap_network:
+    driver: bridge
