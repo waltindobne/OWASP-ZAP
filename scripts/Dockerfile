@@ -1,21 +1,24 @@
-# scripts/Dockerfile
-FROM python:3.9-slim-buster
+FROM python:3.9-slim-bullseye
 
-# Define o diretório de trabalho dentro do contêiner
 WORKDIR /app
 
-# Instala as dependências Flask e Flask-Cors diretamente
-# Se você tiver outras dependências além dessas, adicione-as aqui.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    jq \
+    dos2unix \
+    ca-certificates \
+    gnupg \
+    lsb-release \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN pip install --no-cache-dir Flask Flask-Cors
 
-# Copia os arquivos da API e outros scripts
-COPY api_flask.py .
-COPY generate_html_report.py .
-COPY layout.html .
-COPY run_full_test.sh .
+COPY scripts/ .
 
-# Expor a porta que o Flask vai usar
+RUN dos2unix /app/run_full_test.sh && \
+    chmod +x /app/run_full_test.sh && \
+    chmod +x /app/generate_html_report.py
+
 EXPOSE 5000
-
-# Comando para rodar a aplicação Flask
 CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

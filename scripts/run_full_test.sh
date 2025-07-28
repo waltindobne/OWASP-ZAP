@@ -4,10 +4,10 @@
 #ZAP_TARGET_URL="https://testing-hdsupport.bne.com.br"
 #ZAP_TARGET_URL="https://testing-campcode.bne.com.br" 
 #RECIPIENT_EMAIL="walterbrito@bne.com.br"
-echo "${$1}" 
-echo "${$2}"
-ZAP_TARGET_URL="${$1}"
-RECIPIENT_EMAIL="${$2}"
+echo "$1" 
+echo "$2"
+ZAP_TARGET_URL="$1"
+RECIPIENT_EMAIL="$2"
 
 if [ -z "$ZAP_TARGET_URL" ]; then
     echo "ERRO: URL do alvo não fornecida." >&2
@@ -34,7 +34,7 @@ ZAP_REPORT_JSON_FILENAME="relatory_${APP_NAME}.json"
 ZAP_HTML_TEMPLATE_PATH="layout.html"
 ZAP_FINAL_HTML_REPORT_FILENAME="relatory_${APP_NAME}.html"
 
-LOCAL_REPORTS_DIR="${HOME}/Zap-Job/reports"
+LOCAL_REPORTS_DIR="/app/reports"
 
 ZAP_DOCKER_IMAGE="ghcr.io/zaproxy/zaproxy:latest"
 
@@ -66,7 +66,6 @@ FULL_JSON_PATH="${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
 
 # --- Validações de Pré-requisitos ---
 echo "Verificando pré-requisitos..."
-check_command docker
 check_command python3
 check_command curl
 check_command jq # Adiciona a verificação do jq aqui, como é usado mais abaixo
@@ -78,22 +77,45 @@ rm -f "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
 rm -f "${LOCAL_REPORTS_DIR}/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 
 
-# --- PASSO 1: Executar o ZAP Baseline Scan via Docker ---
-echo "Iniciando ZAP Baseline Scan via Docker para: ${ZAP_TARGET_URL}"
-echo "Relatório será salvo em: ${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
+# --- Passo 1
+# --- Validações de Pré-requisitos ---
+echo "Verificando pré-requisitos..."
+check_command python3
+check_command curl
+check_command jq
 
-run_command docker run --rm \
-  -v "${LOCAL_REPORTS_DIR}":/zap/wrk/:rw \
-  "${ZAP_DOCKER_IMAGE}" \
-  zap-baseline.py -t "${ZAP_TARGET_URL}" -J "${ZAP_REPORT_JSON_FILENAME}" -I
+# --- PASSO 1: Executar o ZAP Baseline Scan via Docker Compose ---
+echo "Iniciando scan na URL: ${ZAP_TARGET_URL}"
+echo ""
 
-# Verifica se o arquivo JSON foi criado
-if [ ! -f "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}" ]; then
-    echo "Erro: Relatório JSON '${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}' NÃO FOI GERADO PELO ZAP." >&2
-    exit 1
-fi
-echo "ZAP scan concluído, relatório JSON salvo em: ${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
-ls -la "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
+# Função para mostrar barra de progresso
+show_progress() {
+    local width=50
+    local percent=$1
+    local filled=$((width * percent / 100))
+    local empty=$((width - filled))
+    
+    printf "\r["
+    printf "%${filled}s" | tr ' ' '='
+    printf "%${empty}s" | tr ' ' ' '
+    printf "] %3d%%" $percent
+}
+
+# Monitora o progresso com atualização visual
+while true; do
+    STATUS=$(curl -s "${ZAP_URL}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
+    
+    # Atualiza apenas quando o progresso mudar
+    if [[ "$STATUS" != "$LAST_STATUS" ]]; then
+        show_progress $STATUS
+        LAST_STATUS=$STATUS
+    fi
+    
+    [[ "$STATUS" -eq 100 ]] && break
+    sleep 5
+done
+
+echo -e "\n\nScan completado!"
 
 # --- PASSO 2: Gerar o Relatório HTML Final ---
 echo "Gerando relatório HTML a partir do JSON..."

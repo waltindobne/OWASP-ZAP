@@ -1,22 +1,38 @@
 services:
+  zaproxy:
+    image: ghcr.io/zaproxy/zaproxy:latest
+    container_name: owasp-zap
+    restart: unless-stopped
+    volumes:
+      - ./reports:/zap/wrk
+    networks:
+      - zap_network
+    entrypoint: ["zap-x.sh"]
+    command: ["-config", "api.disablekey=true", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true"]
+
   api:
-    build: 
-      context: ./scripts
-      dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: scripts/Dockerfile
     container_name: zap-api-flask
     restart: always
     ports:
       - "5000:5000"
     volumes:
       - ./reports:/app/reports
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - FLASK_APP=api_flask.py
       - FLASK_ENV=development
     networks:
       - zap_network
+    depends_on:
+      - zaproxy
     
   web:
-    image: nginx:latest
+    build:
+      context: ./nginx-web
+      dockerfile: Dockerfile
     container_name: zap-web-nginx
     restart: always
     ports:

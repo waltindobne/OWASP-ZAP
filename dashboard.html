@@ -1017,7 +1017,7 @@
 
         // --- Nova lógica para carregar o JSON ---
         window.addEventListener('DOMContentLoaded', () => {
-            const apiEndpoint = "reports/relatory-reports.json"; // Certifique-se que este caminho está correto!
+            const apiEndpoint = "http://localhost:5000/reports"; // Certifique-se que este caminho está correto!
 
             fetch(apiEndpoint)
                 .then(response => {
