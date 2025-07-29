@@ -1,6 +1,6 @@
 # scripts/api_flask.py
 
-from flask import Flask, jsonify, send_from_directory, request
+from flask import Flask, jsonify, send_from_directory, request, stream_with_context
 from flask_cors import CORS
 import json
 import os
@@ -17,6 +17,28 @@ JSON_FILE_PATH = os.path.join(SCRIPT_DIR, 'reports', 'relatory-reports.json')
 BASH_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'run_full_test.sh')
 
 # --- Endpoints da API ---
+
+@app.route('/stream-test', methods=['POST'])
+def stream_test():
+    data = request.get_json()
+    target_url = data.get('url')
+    email = data.get('email')
+
+    def generate():
+        process = subprocess.Popen(
+            [BASH_SCRIPT_PATH, target_url, email],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+
+        for line in iter(process.stdout.readline, ''):
+            yield f"data: {line.strip()}\n\n"
+        
+        process.stdout.close()
+        process.wait()
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 @app.route('/start-configured-tests', methods=['POST'])
 def start_configured_tests():
     """

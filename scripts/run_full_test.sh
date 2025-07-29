@@ -37,6 +37,7 @@ ZAP_FINAL_HTML_REPORT_FILENAME="relatory_${APP_NAME}.html"
 LOCAL_REPORTS_DIR="/app/reports"
 
 ZAP_DOCKER_IMAGE="ghcr.io/zaproxy/zaproxy:latest"
+ZAP_API="http://owasp-zap:8080"
 
 SENDER_EMAIL="walter.222brito@gmail.com"
 SENDER_PASSWORD="ucys jzqn auyk geem"
@@ -85,37 +86,54 @@ check_command curl
 check_command jq
 
 # --- PASSO 1: Executar o ZAP Baseline Scan via Docker Compose ---
-echo "Iniciando scan na URL: ${ZAP_TARGET_URL}"
-echo ""
+echo "Aguardando o ZAP inicializar completamente..."
+sleep 30
 
-# Função para mostrar barra de progresso
+echo "Executando Spider para adicionar URL à árvore..."
+SPIDER_ID=$(curl -s "${ZAP_API}/JSON/spider/action/scan/?url=${ZAP_TARGET_URL}" | jq -r '.scan')
+if [ -z "$SPIDER_ID" ] || [ "$SPIDER_ID" == "null" ]; then
+  echo "Erro ao iniciar o spider."
+  exit 1
+fi
+
+# Aguardar spider finalizar
+while true; do
+  STATUS=$(curl -s "${ZAP_API}/JSON/spider/view/status/?scanId=${SPIDER_ID}" | jq -r '.status')
+  echo "Spider status: ${STATUS}%"
+  [ "$STATUS" -eq 100 ] && break
+  sleep 2
+done
+echo "Spider concluído. Iniciando scan ativo..."
+
+echo "Iniciando scan na URL: ${ZAP_TARGET_URL}"
+
+SCAN_ID=$(curl -s "${ZAP_API}/JSON/ascan/action/scan/?url=${ZAP_TARGET_URL}" | jq -r '.scan')
+if [ -z "$SCAN_ID" ] || [ "$SCAN_ID" == "null" ]; then
+  echo "Erro ao iniciar o scan ativo no ZAP"
+  exit 1
+fi
+
 show_progress() {
-    local width=50
-    local percent=$1
-    local filled=$((width * percent / 100))
-    local empty=$((width - filled))
-    
-    printf "\r["
-    printf "%${filled}s" | tr ' ' '='
-    printf "%${empty}s" | tr ' ' ' '
-    printf "] %3d%%" $percent
+    local status="$1"
+    echo -ne "\rProgresso: $status%"
+    sleep 0.1
 }
 
-# Monitora o progresso com atualização visual
+echo "Scan iniciado com ID: $SCAN_ID"
+LAST_STATUS=""
 while true; do
-    STATUS=$(curl -s "${ZAP_URL}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
-    
-    # Atualiza apenas quando o progresso mudar
+    STATUS=$(curl -s "${ZAP_API}/JSON/ascan/view/status/?scanId=${SCAN_ID}" | jq -r '.status')
     if [[ "$STATUS" != "$LAST_STATUS" ]]; then
         show_progress $STATUS
         LAST_STATUS=$STATUS
     fi
-    
     [[ "$STATUS" -eq 100 ]] && break
     sleep 5
 done
 
 echo -e "\n\nScan completado!"
+curl -s "${ZAP_API}/OTHER/core/other/jsonreport/" -o "${FULL_JSON_PATH}"
+
 
 # --- PASSO 2: Gerar o Relatório HTML Final ---
 echo "Gerando relatório HTML a partir do JSON..."
@@ -206,7 +224,7 @@ if [ $? -ne 0 ]; then
 fi
 echo "E-mail enviado com sucesso!"
 
-REPORTS_SUMMARY_FILE="relatory-reports.json"
+REPORTS_SUMMARY_FILE="${LOCAL_REPORTS_DIR}/relatory-reports.json"
 DATA_EXECUCAO=$(date "+%Y-%m-%d %H:%M:%S")
 HTML_FILENAME_PATH="reports/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 

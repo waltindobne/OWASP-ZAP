@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OWASP ZAP | Scanner Web</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="shortcut icon" href="nginx-web/favicon.ico" type="image/x-icon">
     <style>
         :root {
             --primary: #6c5ce7;
@@ -532,6 +533,12 @@
                     },
                     body: JSON.stringify({ url, email })
                 });
+
+                const eventSource = new EventSource('http://localhost:5000/stream-test');
+                eventSource.onmessage = function (event) {
+                    const output = document.getElementById('commandOutput');
+                    output.textContent += event.data + "\n";
+                };
 
                 const data = await response.json();
 

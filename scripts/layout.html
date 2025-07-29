@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Relatório de Segurança ZAP</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="shortcut icon" href="nginx-web/favicon.ico" type="image/x-icon">
   <style>
     :root {
       --primary: #4361ee;
@@ -399,12 +400,12 @@
 
     async function carregarRelatorio() {
       try {
-        const container = document.getElementById('relatorio'); 
+        const container = document.getElementById('relatorio');
 
         const emptyDiv = document.createElement('div');
         emptyDiv.id = 'empty-message';
         emptyDiv.className = 'empty-state';
-        emptyDiv.style.display = 'none'; 
+        emptyDiv.style.display = 'none';
         emptyDiv.innerHTML = `
           <img src="https://cdn-icons-png.flaticon.com/512/4076/4076478.png" alt="Nenhum alerta">
           <h3>Nenhum alerta encontrado para este filtro.</h3>
@@ -417,14 +418,14 @@
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
 
-            const riskToFilter = btn.dataset.risk; 
+            const riskToFilter = btn.dataset.risk;
             let anyAlertVisible = false;
 
             document.querySelectorAll('.alert').forEach(alertElement => {
-              const alertRiskCode = alertElement.dataset.riskcode; 
+              const alertRiskCode = alertElement.dataset.riskcode;
 
               if (riskToFilter === 'all' || alertRiskCode === riskToFilter) {
-                alertElement.style.display = 'flex'; 
+                alertElement.style.display = 'flex';
                 anyAlertVisible = true;
               } else {
                 alertElement.style.display = 'none';

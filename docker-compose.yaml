@@ -1,14 +1,25 @@
 services:
-  zaproxy:
+  owasp-zap:
     image: ghcr.io/zaproxy/zaproxy:latest
     container_name: owasp-zap
-    restart: unless-stopped
     volumes:
-      - ./reports:/zap/wrk
+      - ./reports:/app/reports
+    ports:
+      - "8080:8080"
+    command: >
+      zap.sh -daemon
+      -host 0.0.0.0
+      -port 8080
+      -config api.disablekey=true
+      -config api.addrs.addr.name=.*
+      -config api.addrs.addr.regex=true
     networks:
-      - zap_network
-    entrypoint: ["zap-x.sh"]
-    command: ["-config", "api.disablekey=true", "-config", "api.addrs.addr.name=.*", "-config", "api.addrs.addr.regex=true"]
+      - zapnet
+    healthcheck:
+      test: curl -f http://localhost:8080/ || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build:
@@ -25,9 +36,11 @@ services:
       - FLASK_APP=api_flask.py
       - FLASK_ENV=development
     networks:
-      - zap_network
+      - zapnet
     depends_on:
-      - zaproxy
+      owasp-zap:
+        condition: service_healthy
+
     
   web:
     build:
@@ -42,8 +55,8 @@ services:
     depends_on:
       - api
     networks:
-      - zap_network
+      - zapnet
     
 networks:
-  zap_network:
+  zapnet:
     driver: bridge
