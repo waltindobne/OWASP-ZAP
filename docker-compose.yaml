@@ -44,14 +44,14 @@ services:
     
   web:
     build:
-      context: ./nginx-web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: nginx-web/Dockerfile
     container_name: zap-web-nginx
     restart: always
     ports:
-      - "80:80"
+      - "9100:9100"
     volumes:
-      - ./:/usr/share/nginx/html
+      - ./reports:/usr/share/nginx/html/reports
     depends_on:
       - api
     networks:
