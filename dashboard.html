@@ -7,6 +7,7 @@
     <title>OWASP ZAP | Hub Reports</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="shortcut icon" href="nginx-web/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <style>
         :root {
             --primary: #6c5ce7;
@@ -496,6 +497,16 @@
             justify-content: center;
         }
 
+        #btn-delete {
+            background-color: #000000/50;
+            color: var(--gray);
+        }
+        #btn-delete:hover {
+            background-color: var(--danger);
+            background-color: #ff2b2b;
+            color: white;
+        }
+
         [data-theme="dark"] .action-btn {
             background-color: rgba(255, 255, 255, 0.05);
         }
@@ -790,6 +801,7 @@
 
         function timeAgo(dateString) {
             const date = new Date(dateString);
+            date.setHours(date.getHours() - 3);
             const now = new Date();
             const seconds = Math.floor((now - date) / 1000);
 
@@ -893,6 +905,9 @@
                             <button class="action-btn" title="Share" onclick="shareReport('${domain}')">
                                 <i class="fas fa-share-alt"></i>
                             </button>
+                            <button id="btn-delete" class="action-btn bg-red-600" title="Delete" onclick="deleteReport('${report.url_executado}')" data-url="${report.url_executado}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -941,6 +956,42 @@
         function shareReport(domain) {
             console.log(`Sharing report for: ${domain}`);
             alert(`Share functionality would be implemented here for ${domain}`);
+        }
+
+        function deleteReport(url) {
+            if (!confirm(`Tem certeza que deseja excluir o relatório para ${url}?`)) {
+                return;
+            }
+
+            document.querySelectorAll('#btn-delete').forEach(button => {
+                button.addEventListener('click', function () {
+                    const url = this.getAttribute('data-url');
+                    deleteReport(url);
+                });
+            });
+
+            fetch(`http://localhost:5000/del-reports/${encodeURIComponent(url)}`, {
+                method: 'DELETE',
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => { throw new Error(err.message || 'Erro ao excluir relatório'); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    showStatus(data.message, 'success');
+                    loadReports(); // Recarrega a lista após exclusão
+                })
+                .catch(error => {
+                    showStatus(error.message, 'error');
+                    console.error('Erro:', error);
+                });
+        }
+
+        function showStatus(message) {
+            alert(message);
+            window.location.reload();
         }
 
         const searchInput = document.getElementById('search-input');
@@ -1049,4 +1100,5 @@
         });
     </script>
 </body>
+
 </html>

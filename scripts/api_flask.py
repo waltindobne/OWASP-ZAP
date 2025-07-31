@@ -16,8 +16,6 @@ JSON_FILE_PATH = os.path.join(SCRIPT_DIR, 'reports', 'relatory-reports.json')
 
 BASH_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'run_full_test.sh')
 
-# --- Endpoints da API ---
-
 @app.route('/stream-test', methods=['POST'])
 def stream_test():
     data = request.get_json()
@@ -55,7 +53,6 @@ def start_configured_tests():
         return jsonify({"error": "URL e E-mail são obrigatórios."}), 400
 
     try:
-        # Verifica se o script bash existe no caminho esperado
         if not os.path.exists(BASH_SCRIPT_PATH):
             return jsonify({
                 "error": "Script bash 'run_full_test.sh' não encontrado.",
@@ -63,14 +60,8 @@ def start_configured_tests():
                 "message": "Verifique se 'run_full_test.sh' está no diretório raiz do projeto Zap-Job e montado corretamente em /app/run_full_test.sh no contêiner."
             }), 404
 
-        # REMOVIDO: os.chmod(BASH_SCRIPT_PATH, 0o755)
-        # A permissão de execução deve ser definida no Dockerfile (RUN chmod +x)
-        # para evitar problemas de permissão em tempo de execução e redundância.
-
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Disparando testes para URL: {target_url}, Email: {email}")
 
-        # Passa a URL e o E-mail como argumentos para o script bash
-        # Eles estarão disponíveis no script bash como $1 e $2
         process = subprocess.run(
             [BASH_SCRIPT_PATH, target_url, email], # Lista de argumentos
             capture_output=True,
@@ -78,7 +69,6 @@ def start_configured_tests():
             check=True,
         )
 
-        # Após a execução, tenta ler os novos dados do JSON
         if os.path.exists(JSON_FILE_PATH):
             with open(JSON_FILE_PATH, 'r', encoding='utf-8') as f:
                 updated_data = json.load(f)
@@ -134,7 +124,7 @@ def get_reports():
 
         for report in data:
             if "data_execucao" not in report or not report["data_execucao"]:
-                report["data_execucao"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                report["data_execucao"] = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
 
         return jsonify(data)
     except json.JSONDecodeError:
@@ -145,10 +135,57 @@ def get_reports():
     except Exception as e:
         return jsonify({"error": f"Erro interno ao ler relatórios: {str(e)}"}), 500
 
+@app.route('/del-reports/<path:url>', methods=['DELETE'])
+def delete_report(url):
+    """
+    Endpoint para excluir um relatório específico identificado pela URL.
+    """
+    try:
+        if not os.path.exists(JSON_FILE_PATH):
+            return jsonify({
+                "error": "Nenhum relatório encontrado.",
+                "message": "O arquivo de relatórios não existe."
+            }), 404
+
+        with open(JSON_FILE_PATH, 'r', encoding='utf-8') as f:
+            reports = json.load(f)
+
+        original_count = len(reports)
+        updated_reports = [r for r in reports if r['url_executado'].rstrip('/') != url.rstrip('/')]
+
+        # Verifica se algum item foi removido
+        if len(updated_reports) == original_count:
+            return jsonify({
+                "error": "Relatório não encontrado.",
+                "message": f"Nenhum relatório encontrado para a URL: {url}"
+            }), 404
+
+        deleted_report = next(r for r in reports if r['url_executado'].rstrip('/') == url.rstrip('/'))
+        html_file_path = os.path.join(SCRIPT_DIR, deleted_report['caminho_html'])
+        
+        if os.path.exists(html_file_path):
+            try:
+                os.remove(html_file_path)
+            except Exception as e:
+                print(f"Erro ao remover arquivo HTML: {str(e)}")
+
+        with open(JSON_FILE_PATH, 'w', encoding='utf-8') as f:
+            json.dump(updated_reports, f, indent=2)
+
+        return jsonify({
+            "message": f"Relatório para {url} removido com sucesso.",
+            "remaining_reports": len(updated_reports)
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "Erro ao excluir relatório",
+            "message": str(e)
+        }), 500
+
 if __name__ == '__main__':
     if not os.path.exists(JSON_FILE_PATH):
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {JSON_FILE_PATH} não encontrado. Criando um arquivo JSON vazio.")
-        # Garante que o diretório 'reports' exista antes de tentar criar o arquivo JSON
         os.makedirs(os.path.dirname(JSON_FILE_PATH), exist_ok=True)
         with open(JSON_FILE_PATH, 'w', encoding='utf-8') as f:
             json.dump([], f, indent=2)

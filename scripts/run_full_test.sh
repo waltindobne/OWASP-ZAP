@@ -1,33 +1,21 @@
 #!/bin/bash
 
-#ZAP_TARGET_URL="https://hd-support-bne.vercel.app" 
-#ZAP_TARGET_URL="https://testing-hdsupport.bne.com.br"
-#ZAP_TARGET_URL="https://testing-campcode.bne.com.br" 
-#RECIPIENT_EMAIL="walterbrito@bne.com.br"
-echo "$1" 
-echo "$2"
 ZAP_TARGET_URL="$1"
 RECIPIENT_EMAIL="$2"
 
 if [ -z "$ZAP_TARGET_URL" ]; then
     echo "ERRO: URL do alvo não fornecida." >&2
-    echo "FIM_DO_SCAN_FALHA" # Sinaliza falha
+    echo "FIM_DO_SCAN_FALHA"
     exit 1
 fi
 
-# Se o email não for fornecido, usa um email padrão ou não envia
 if [ -z "$RECIPIENT_EMAIL" ]; then
     echo "AVISO: E-mail para notificação não fornecido. O relatório pode não ser enviado por e-mail."
-    # Você pode definir um email padrão aqui se quiser
     RECIPIENT_EMAIL="walterbrito@bne.com.br"
 fi
 
-# Extrai o nome da aplicação da URL
-# 1. Remove o protocolo (https://, http://)
 url_no_protocol="${ZAP_TARGET_URL#*//}"
-# 2. Remove a barra final se houver
 url_no_slash="${url_no_protocol%/}"
-# 3. Pega a parte antes do primeiro ponto (o subdomínio/nome da aplicação)
 APP_NAME=$(echo "${url_no_slash}" | cut -d'.' -f1)
 
 ZAP_REPORT_JSON_FILENAME="relatory_${APP_NAME}.json"
@@ -45,13 +33,10 @@ SENDER_PASSWORD="ucys jzqn auyk geem"
 
 echo "Extraindo dados do relatório JSON para o corpo do e-mail..."
 
-# Verifica se o jq está instalado
-# A função check_command precisa ser definida antes de ser chamada.
 function check_command {
     command -v "$1" >/dev/null 2>&1 || { echo >&2 "Erro: $1 não está instalado. Abortando."; exit 1; }
 }
 
-# Define a função run_command
 function run_command {
     echo "Executando: $@"
     "$@"
@@ -62,14 +47,12 @@ function run_command {
 }
 
 
-# Caminho completo para o relatório JSON
 FULL_JSON_PATH="${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
 
-# --- Validações de Pré-requisitos ---
 echo "Verificando pré-requisitos..."
 check_command python3
 check_command curl
-check_command jq # Adiciona a verificação do jq aqui, como é usado mais abaixo
+check_command jq
 
 # --- PASSO 0: Preparar diretório de relatórios local ---
 
@@ -77,9 +60,6 @@ echo "Limpando relatórios antigos em ${LOCAL_REPORTS_DIR}..."
 rm -f "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
 rm -f "${LOCAL_REPORTS_DIR}/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 
-
-# --- Passo 1
-# --- Validações de Pré-requisitos ---
 echo "Verificando pré-requisitos..."
 check_command python3
 check_command curl
@@ -96,7 +76,6 @@ if [ -z "$SPIDER_ID" ] || [ "$SPIDER_ID" == "null" ]; then
   exit 1
 fi
 
-# Aguardar spider finalizar
 while true; do
   STATUS=$(curl -s "${ZAP_API}/JSON/spider/view/status/?scanId=${SPIDER_ID}" | jq -r '.status')
   echo "Spider status: ${STATUS}%"
@@ -147,13 +126,16 @@ ls -l "${LOCAL_REPORTS_DIR}/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 
 # --- PASSO 3: Enviar o Relatório por E-mail (com curl para SMTP) ---
 echo "Enviando relatório por e-mail..."
-HIGH_ALERTS=$(jq '.site?.[0]?.alerts | map(select(.riskcode == "3")) | length' "${FULL_JSON_PATH}")
-MEDIUM_ALERTS=$(jq '.site?.[0]?.alerts | map(select(.riskcode == "2")) | length' "${FULL_JSON_PATH}")
-LOW_ALERTS=$(jq '.site?.[0]?.alerts | map(select(.riskcode == "1")) | length' "${FULL_JSON_PATH}")
-INFO_ALERTS=$(jq '.site?.[0]?.alerts | map(select(.riskcode == "0")) | length' "${FULL_JSON_PATH}")
-TOTAL_ALERTS=$(jq '.site?.[0]?.alerts | length' "${FULL_JSON_PATH}")
+HIGH_ALERTS=$(jq '[.site[]?.alerts[]? | select(.riskcode == "3")] | length' "${FULL_JSON_PATH}" || echo 0)
+MEDIUM_ALERTS=$(jq '[.site[]?.alerts[]? | select(.riskcode == "2")] | length' "${FULL_JSON_PATH}" || echo 0)
+LOW_ALERTS=$(jq '[.site[]?.alerts[]? | select(.riskcode == "1")] | length' "${FULL_JSON_PATH}" || echo 0)
+INFO_ALERTS=$(jq '[.site[]?.alerts[]? | select(.riskcode == "0")] | length' "${FULL_JSON_PATH}" || echo 0)
+TOTAL_ALERTS=$(jq '[.site[]?.alerts[]?] | length' "${FULL_JSON_PATH}" || echo 0)
 
-# Verifica se a extração foi bem-sucedida (jq retorna null ou 0 se não encontrar)
+echo "DEBUG - Alertas encontrados:"
+echo "Alto: $HIGH_ALERTS, Médio: $MEDIUM_ALERTS, Baixo: $LOW_ALERTS, Info: $INFO_ALERTS, Total: $TOTAL_ALERTS"
+jq '.site[0].alerts' "${FULL_JSON_PATH}"
+
 if [ -z "$HIGH_ALERTS" ]; then HIGH_ALERTS=0; fi
 if [ -z "$MEDIUM_ALERTS" ]; then MEDIUM_ALERTS=0; fi
 if [ -z "$LOW_ALERTS" ]; then LOW_ALERTS=0; fi
@@ -180,7 +162,6 @@ EMAIL_BODY_HTML="<html><body><div style='font-family: Arial, sans-serif; backgro
 </div></body></html>"
 
 REPORTS_SUMMARY_FILE="relatory-reports.json"
-# Preparar corpo do e-mail com anexo MIME
 BOUNDARY="----=_Part_$(date +%s%N)"
 
 (
@@ -228,8 +209,6 @@ REPORTS_SUMMARY_FILE="${LOCAL_REPORTS_DIR}/relatory-reports.json"
 DATA_EXECUCAO=$(date "+%Y-%m-%d %H:%M:%S")
 HTML_FILENAME_PATH="reports/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 
-
-# Cria o novo objeto JSON com as informações do relatório
 NEW_ENTRY=$(jq -n \
   --arg url "$ZAP_TARGET_URL" \
   --arg date "$DATA_EXECUCAO" \
@@ -257,8 +236,6 @@ NEW_ENTRY=$(jq -n \
 echo "Novo conteúdo a adicionar:"
 echo "$NEW_ENTRY" | jq .
 
-# Se o arquivo já existir, lê o array atual e adiciona a nova entrada.
-# Se não existir, cria um novo array com a nova entrada.
 if [ -s "$REPORTS_SUMMARY_FILE" ]; then
     jq --arg url "$ZAP_TARGET_URL" --argjson new "$NEW_ENTRY" '
         map(if .url_executado == $url then $new else . end)
@@ -279,5 +256,4 @@ echo "Arquivo de resumo '${REPORTS_SUMMARY_FILE}' salvo com sucesso."
 # --- PASSO 4: Limpeza dos Recursos ---
 echo "Limpando arquivos gerados localmente em ${LOCAL_REPORTS_DIR}..."
 rm -f "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}"
-#rm -f "${LOCAL_REPORTS_DIR}/${ZAP_FINAL_HTML_REPORT_FILENAME}"
 echo "Limpeza concluída. Processo finalizado com sucesso."
