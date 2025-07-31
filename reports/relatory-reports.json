@@ -11,5 +11,18 @@
     },
     "resumo": "",
     "caminho_html": "reports/relatory_orbit.html"
+  },
+  {
+    "url_executado": "https://proxy.crion.dev",
+    "data_execucao": "2025-07-31 18:51:01",
+    "quantidade_riscos": {
+      "alto": 0,
+      "medio": 13,
+      "baixo": 8,
+      "informativo": 9,
+      "total": 30
+    },
+    "resumo": "",
+    "caminho_html": "reports/relatory_proxy.html"
   }
 ]
