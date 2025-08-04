@@ -20,7 +20,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
   api:
     build:
       context: .
@@ -33,15 +32,13 @@ services:
       - ./reports:/app/reports
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - FLASK_APP=api_flask.py
+      - FLASK_APP=flask-api.py
       - FLASK_ENV=development
     networks:
       - zapnet
     depends_on:
       owasp-zap:
-        condition: service_healthy
-
-    
+        condition: service_healthy    
   web:
     build:
       context: .
@@ -52,11 +49,11 @@ services:
       - "9100:80"
     volumes:
       - ./reports:/usr/share/nginx/html/reports
+      - ./web-html:/usr/share/nginx/html
     depends_on:
       - api
     networks:
       - zapnet
-    
 networks:
   zapnet:
     driver: bridge

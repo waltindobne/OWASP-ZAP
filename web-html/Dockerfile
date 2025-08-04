@@ -1,11 +1,11 @@
-FROM nginx:latest
+FROM nginx:alpine
 
-COPY ./index.html /usr/share/nginx/html/index.html
-COPY ./dashboard.html /usr/share/nginx/html/dashboard.html
-COPY ./css/style.css /usr/share/nginx/html/style.css
+RUN rm -rf /usr/share/nginx/html/*
 
-COPY ../reports/ /usr/share/nginx/html/reports/
+COPY . /usr/share/nginx/html/
 
-EXPOSE 9100
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
 
+EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]

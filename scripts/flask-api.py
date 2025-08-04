@@ -8,11 +8,11 @@ import subprocess
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost", "http://localhost:80", "http://localhost:5000"]}})
+CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost:9100", "http://localhost:80", "http://localhost:5000"]}})
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-JSON_FILE_PATH = os.path.join(SCRIPT_DIR, 'reports', 'relatory-reports.json')
+JSON_FILE_PATH = os.path.join('/app/reports', 'relatory-reports.json')
 
 BASH_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'run-zap.sh')
 
