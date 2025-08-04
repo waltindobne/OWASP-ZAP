@@ -16,9 +16,9 @@ RUN pip install --no-cache-dir Flask Flask-Cors
 
 COPY scripts/ .
 
-RUN dos2unix /app/run_full_test.sh && \
-    chmod +x /app/run_full_test.sh && \
-    chmod +x /app/generate_html_report.py
+RUN dos2unix /app/run-zap.sh && \
+    chmod +x /app/run-zap.sh && \
+    chmod +x /app/model-render.py
 
 EXPOSE 5000
 CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]

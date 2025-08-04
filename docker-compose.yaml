@@ -45,11 +45,11 @@ services:
   web:
     build:
       context: .
-      dockerfile: nginx-web/Dockerfile
+      dockerfile: web-html/Dockerfile
     container_name: zap-web-nginx
     restart: always
     ports:
-      - "9100:9100"
+      - "9100:80"
     volumes:
       - ./reports:/usr/share/nginx/html/reports
     depends_on:
