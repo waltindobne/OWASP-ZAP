@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "url_executado": "https://testing-campcode.bne.com.br",
+    "data_execucao": "2025-08-05 17:40:13",
+    "quantidade_riscos": {
+      "alto": 0,
+      "medio": 1,
+      "baixo": 1,
+      "informativo": 1,
+      "total": 3
+    },
+    "resumo": "",
+    "caminho_html": "reports/relatory_testing-campcode.html"
+  }
+]
