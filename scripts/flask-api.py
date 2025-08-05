@@ -8,13 +8,13 @@ import subprocess
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost", "http://localhost:80", "http://localhost:5000"]}})
+CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost:9100", "http://localhost:80", "http://localhost:5000"]}})
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-JSON_FILE_PATH = os.path.join(SCRIPT_DIR, 'reports', 'relatory-reports.json')
+JSON_FILE_PATH = os.path.join('/app/reports', 'relatory-reports.json')
 
-BASH_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'run_full_test.sh')
+BASH_SCRIPT_PATH = os.path.join(SCRIPT_DIR, 'run-zap.sh')
 
 @app.route('/stream-test', methods=['POST'])
 def stream_test():
@@ -40,7 +40,7 @@ def stream_test():
 @app.route('/start-configured-tests', methods=['POST'])
 def start_configured_tests():
     """
-    Endpoint para receber URL e E-mail, e disparar o script run_full_test.sh com esses parâmetros.
+    Endpoint para receber URL e E-mail, e disparar o script bash com esses parâmetros.
     """
     if not request.is_json:
         return jsonify({"error": "Requisição deve ser JSON"}), 400
@@ -55,9 +55,9 @@ def start_configured_tests():
     try:
         if not os.path.exists(BASH_SCRIPT_PATH):
             return jsonify({
-                "error": "Script bash 'run_full_test.sh' não encontrado.",
+                "error": "Script bash não encontrado.",
                 "expected_path": BASH_SCRIPT_PATH,
-                "message": "Verifique se 'run_full_test.sh' está no diretório raiz do projeto Zap-Job e montado corretamente em /app/run_full_test.sh no contêiner."
+                "message": "Verifique se 'o script bash' está no diretório raiz do projeto Zap-Job e montado corretamente em /app/run-zap.sh no contêiner."
             }), 404
 
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Disparando testes para URL: {target_url}, Email: {email}")
@@ -87,13 +87,13 @@ def start_configured_tests():
                 "expected_json_path": JSON_FILE_PATH,
                 "bash_stdout": process.stdout,
                 "bash_stderr": process.stderr,
-                "message": "Verifique a lógica do seu 'run_full_test.sh' para garantir que ele cria/atualiza o JSON no diretório esperado."
+                "message": "Verifique a lógica do seu 'script bash' para garantir que ele cria/atualiza o JSON no diretório esperado."
             }), 500
 
     except subprocess.CalledProcessError as e:
         return jsonify({
             "error": f"Erro ao executar script bash (código de saída {e.returncode}).",
-            "message": "O script 'run_full_test.sh' encontrou um problema. Verifique a saída de erro.",
+            "message": "O script bash encontrou um problema. Verifique a saída de erro.",
             "stdout": e.stdout,
             "stderr": e.stderr
         }), 500
@@ -153,7 +153,6 @@ def delete_report(url):
         original_count = len(reports)
         updated_reports = [r for r in reports if r['url_executado'].rstrip('/') != url.rstrip('/')]
 
-        # Verifica se algum item foi removido
         if len(updated_reports) == original_count:
             return jsonify({
                 "error": "Relatório não encontrado.",

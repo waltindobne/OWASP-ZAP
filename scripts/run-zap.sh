@@ -1,5 +1,4 @@
 #!/bin/bash
-
 ZAP_TARGET_URL="$1"
 RECIPIENT_EMAIL="$2"
 
@@ -19,7 +18,7 @@ url_no_slash="${url_no_protocol%/}"
 APP_NAME=$(echo "${url_no_slash}" | cut -d'.' -f1)
 
 ZAP_REPORT_JSON_FILENAME="relatory_${APP_NAME}.json"
-ZAP_HTML_TEMPLATE_PATH="layout.html"
+ZAP_HTML_TEMPLATE_PATH="model-reports.html"
 ZAP_FINAL_HTML_REPORT_FILENAME="relatory_${APP_NAME}.html"
 
 LOCAL_REPORTS_DIR="/app/reports"
@@ -116,7 +115,7 @@ curl -s "${ZAP_API}/OTHER/core/other/jsonreport/" -o "${FULL_JSON_PATH}"
 
 # --- PASSO 2: Gerar o Relatório HTML Final ---
 echo "Gerando relatório HTML a partir do JSON..."
-run_command python3 generate_html_report.py \
+run_command python3 model-render.py \
   "${LOCAL_REPORTS_DIR}/${ZAP_REPORT_JSON_FILENAME}" \
   "${ZAP_HTML_TEMPLATE_PATH}" \
   "${LOCAL_REPORTS_DIR}/${ZAP_FINAL_HTML_REPORT_FILENAME}"
