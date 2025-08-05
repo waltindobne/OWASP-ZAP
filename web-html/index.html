@@ -551,7 +551,7 @@
 
             try {
                 // Chamada para o endpoint `/start-configured-tests` da sua API Flask
-                const response = await fetch('https://api-zap.crion.dev/start-configured-tests', {
+                const response = await fetch('https://owasp-api.crion.dev/start-configured-tests', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -559,7 +559,7 @@
                     body: JSON.stringify({ url, email })
                 });
 
-                const eventSource = new EventSource('https://api-zap.crion.dev/stream-test');
+                const eventSource = new EventSource('https://owasp-api.crion.dev/stream-test');
                 eventSource.onmessage = function (event) {
                     const output = document.getElementById('commandOutput');
                     output.textContent += event.data + "\n";
