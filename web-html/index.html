@@ -551,7 +551,7 @@
 
             try {
                 // Chamada para o endpoint `/start-configured-tests` da sua API Flask
-                const response = await fetch('http://localhost:5000/start-configured-tests', {
+                const response = await fetch('http://api:5000/start-configured-tests', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

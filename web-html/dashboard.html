@@ -995,7 +995,7 @@
                 });
             });
 
-            fetch(`http://localhost:5000/del-reports/${encodeURIComponent(url)}`, {
+            fetch(`http://api:5000/del-reports/${encodeURIComponent(url)}`, {
                 method: 'DELETE',
             })
                 .then(response => {
@@ -1094,7 +1094,7 @@
 
         // --- Nova lógica para carregar o JSON ---
         window.addEventListener('DOMContentLoaded', () => {
-            const apiEndpoint = "http://localhost:5000/reports"; // Certifique-se que este caminho está correto!
+            const apiEndpoint = "http://api:5000/reports"; // Certifique-se que este caminho está correto!
 
             fetch(apiEndpoint)
                 .then(response => {
