@@ -112,6 +112,27 @@
             gap: 1.5rem;
         }
 
+        .nav-btn {
+            padding: 10px 15px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--box-shadow);
+            text-decoration: none;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+        }
+
         /* Theme Toggle */
         .theme-toggle {
             position: relative;
@@ -405,6 +426,10 @@
                     <input type="checkbox" id="theme-switch">
                     <label class="toggle-slider" for="theme-switch"></label>
                 </div>
+                <a href="owasp-zap.crion.dev" class="nav-btn" data-filter="all">
+                    <i class="fas fa-list"></i>
+                    Dashboard
+                </a>
             </div>
         </header>
 
