@@ -8,7 +8,7 @@ import subprocess
 from datetime import datetime
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost:9100", "http://localhost:80", "http://localhost:5000, https://owasp-zap.crion.dev"]}})
+CORS(app, resources={r"/*": {"origins": ["http://zap-web-nginx", "http://localhost:9100", "http://localhost:80", "http://localhost:5000, https://owasp-zap.crion.dev, http://owasp-zap.crion.dev"]}})
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
